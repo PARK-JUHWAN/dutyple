@@ -126,7 +126,7 @@ for col in [-2, -1, 0]:
 for nurse_name in df_origin.index:
     for day in df_origin.columns:
         if isinstance(day, int) and day > 0:
-            duty = df_origin.loc[nurse_name, day]
+            duty = str(df_origin.loc[nurse_name, day]).upper()
             if pd.notna(duty):
                 if duty in ["D", "E"]:
                     prefer(nurse_name, day, "W")
