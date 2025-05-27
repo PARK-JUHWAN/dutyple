@@ -22,7 +22,6 @@ def download_template():
         return '템플릿 파일이 없습니다', 404
     return send_file(template_path, as_attachment=True)
 
-
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
@@ -61,6 +60,25 @@ def get_result(uid):
     if not os.path.exists(path):
         return '파일 없음', 404
     return send_file(path, as_attachment=True)
+
+@app.route('/result_success', methods=['GET'])
+def get_success_result():
+    uid_path = "success_uid.txt"
+    if not os.path.exists(uid_path):
+        return "성공한 결과가 없습니다", 404
+    with open(uid_path, "r") as f:
+        uid = f.read().strip()
+    path = os.path.join("results", f"result_{uid}.xlsx")
+    if not os.path.exists(path):
+        return "결과 파일이 없습니다", 404
+    return send_file(path, as_attachment=True)
+
+@app.route('/log', methods=['GET'])
+def get_log():
+    if not os.path.exists("log.txt"):
+        return "", 200
+    with open("log.txt", encoding="utf-8") as f:
+        return f.read()
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=10000)
