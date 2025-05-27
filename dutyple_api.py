@@ -15,6 +15,14 @@ app = Flask(__name__)
 def index():
     return 'DUTYPLE API 서버 작동 중'
 
+@app.route('/download-template', methods=['GET'])
+def download_template():
+    template_path = os.path.join(UPLOAD_FOLDER, 'dutyple.xlsx')
+    if not os.path.exists(template_path):
+        return '템플릿 파일이 없습니다', 404
+    return send_file(template_path, as_attachment=True)
+
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
