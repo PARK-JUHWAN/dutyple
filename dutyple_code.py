@@ -5,6 +5,7 @@ import random
 import calendar
 import holidays
 import string
+import openpyxl
 from collections import defaultdict
 from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
@@ -13,43 +14,52 @@ desktop = os.path.join(os.path.expanduser("~"), "Desktop")
 input_path = os.path.join(desktop, "dutyple.xlsx")
 output_path = os.path.join(desktop, "★dutyple★.xlsx")
 
-print(f"📂 입력 파일은 바탕화면의 [dutyple.xlsx] 를 사용합니다: {input_path}")
-print(f"📁 결과 파일은 바탕화면에 [★dutyple★.xlsx] 로 저장됩니다: {output_path}")
-print("   💡 반드시 엑셀 파일은 바탕화면에 두셔야 합니다")
+wb = openpyxl.load_workbook(input_path)
+ws = wb.active
+name_map = {}
 
-print("\n💬 간호사 자동 근무표 생성을 위해 아래 질문에 답해주세요:")
+for i in range(2, 2+26):
+    name = ws.cell(row=i, column=1).value
+    if name is None:
+        break
+    name_map[name] = string.ascii_uppercase[i - 2]
+    ws.cell(row=i, column=1).value = string.ascii_uppercase[i - 2]
 
-print("1) 간호사 수는 몇 명인가요?")
-print("   💡 입력한 숫자만큼 A, B, C... 식으로 연차별로 이름이 자동 부여됩니다")
-print("   💎 Pro 버전은 저연차끼리의 근무, 야간 중복 등을 자동 조정할 수 있습니다\n")
-nurse_count = int(input("👩‍⚕️ [질문1] 간호사 수: "))
+wb.save(input_path)
 
-print("2) 엑셀 파일에 이전달 '3일'치의 근무를 입력하세요")
-print("   ⬇️ 근무 기호 안내: Day = D, Evening = E, Night = N, Night off / Off = X")
-print("   ⬇️ A부터 Z까지 연차 별로 이름이 부여됩니다.")
-print("   👉 근무 과중 방지를 위한 인터벌 기간 입니다")
-print("   💎 Pro 버전은 '3일' 대신 원하는 기간(예: 5일)을 설정할 수 있습니다\n")
 
-print("3) 몇 년도, 몇 월 근무표를 짜시겠어요?")
-year = int(input("   📅 연도 (예: 2025): "))
-month = int(input("   📅 월 (예: 5): "))
+print("6-1) 간호사 수는 몇 명인가요?")
+nurse_count = int(input().replace(" ", ""))
 
-print("4) 평일 기준 데이/이브닝/나이트 인원을 입력해주세요")
-weekday_D = int(input("   Day 인원: "))
-weekday_E = int(input("   Evening 인원: "))
-weekday_N = int(input("   Night 인원: "))
-print("   💎 Pro 버전은 요일별로도 다르게 설정할 수 있습니다 (월/화/수...)\n")
+print("6-2) 몇 년도 근무표를 짜시겠어요?")
+year_input = input().replace(" ", "")
+year = int(year_input)
+if year < 100:
+    year += 2000
 
-print("5) 주말, 공휴일 기준 데이/이브닝/나이트 인원을 입력해주세요")
-holiday_D = int(input("   Day 인원: "))
-holiday_E = int(input("   Evening 인원: "))
-holiday_N = int(input("   Night 인원: "))
-print("   💎 Pro 버전은 토요일, 일요일, 공휴일을 각각 다르게 설정할 수 있습니다\n")
+print("6-3) 몇 월 근무표를 짜시겠어요?")
+month_input = input().replace(" ", "")
+month = int(month_input.lstrip("0")) if month_input != "0" else 0
 
-print("6) 간호사 1인당 월간 나이트 개수는 몇 개인가요?")
-N_count_nurse = int(input("   기본값: ")) + 1
-print("   ✅ 간혹 홀수달에는 나이트 갯수가 오버 될 수 있기에, 자동으로 +1 여유를 부여합니다")
-print("   💎 Pro 버전은 NightKeep, DayEveKeep, 개인별 근무 제한 설정 등이 가능합니다\n")
+print("6-4) 간호사 1인당 월간 나이트 개수는 몇 개인가요?")
+n_input = input("   기본값: ").replace(" ", "")
+N_count_nurse = int(n_input) if n_input == "0" else int(n_input) + 1
+
+def parse_duty_input(msg):
+    parts = input(msg).replace(" ", "").split("/")
+    if len(parts) != 3 or not all(p.isdigit() for p in parts):
+        print("숫자/숫자/숫자 형태로 입력해주세요")
+        sys.exit(1)
+    return map(int, parts)
+
+print("6-5) 평일 기준, 데이/이브닝/나이트 인원을 입력해주세요")
+weekday_D, weekday_E, weekday_N = parse_duty_input("   예: 2/3/2 → ")
+
+print("6-6) 주말&공휴일 기준, 데이/이브닝/나이트 인원을 입력해주세요")
+holiday_D, holiday_E, holiday_N = parse_duty_input("   예: 1/1/2 → ")
+
+print("엑셀 파일을 다운받고, 이전달 3일치의 근무를 입력하세요")
+print("클릭하시면 근무표가 바탕화면에 생성됩니다")
 
 weekday_W = weekday_D + weekday_E
 holiday_W = holiday_D + holiday_E
@@ -126,11 +136,12 @@ for col in [-2, -1, 0]:
 for nurse_name in df_origin.index:
     for day in df_origin.columns:
         if isinstance(day, int) and day > 0:
-            duty = str(df_origin.loc[nurse_name, day]).upper()
-            if pd.notna(duty):
+            raw_val = df_origin.loc[nurse_name, day]
+            if pd.notna(raw_val):
+                duty = str(raw_val).strip().upper()
                 if duty in ["D", "E"]:
                     prefer(nurse_name, day, "W")
-                else:
+                elif duty in ["N", "X"]:
                     prefer(nurse_name, day, duty)
 
 z_rules = {
@@ -381,3 +392,15 @@ with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
             r = df.index.get_loc(nurse) + 2
             c = list(df.columns).index(day) + 2
             ws.cell(row=r, column=c).fill = ED_failfill
+
+final_wb = openpyxl.load_workbook(output_path)
+ws_result = final_wb["dutyple"]
+
+rev_map = {v: k for k, v in name_map.items()}
+
+for row_idx in range(2, 2 + len(rev_map)):
+    alias = ws_result.cell(row=row_idx, column=1).value
+    if alias in rev_map:
+        ws_result.cell(row=row_idx, column=1).value = rev_map[alias]
+
+final_wb.save(output_path)
