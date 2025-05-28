@@ -139,13 +139,14 @@ for nurse_name in df_origin.index:
             try:
                 raw_val = df_origin.at[nurse_name, day]
             except KeyError:
-                continue
+                continue  # 열 이름이 잘못되었거나 존재하지 않는 경우 건너뜀
             if pd.notna(raw_val):
                 duty = str(raw_val).strip().upper()
                 if duty in ["D", "E"]:
                     prefer(nurse_name, day, "W")
                 elif duty in ["N", "X"]:
                     prefer(nurse_name, day, duty)
+
 
 z_rules = {
     0:  ["X"],             # N-N-N
