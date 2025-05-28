@@ -2,6 +2,7 @@ from flask import Flask, request, send_file, jsonify
 import os
 import uuid
 from dutyple_core import run_dutyple
+from datetime import datetime
 
 UPLOAD_FOLDER = 'uploads'
 RESULT_FOLDER = 'results'
@@ -53,6 +54,42 @@ def upload_file():
         return f"배정 실패: {str(e)}", 500
 
     return jsonify({"uuid": uid})
+
+@app.route('/generate', methods=['GET'])
+def generate_duty():
+    try:
+        log_path = "log.txt"
+        with open(log_path, "w", encoding="utf-8") as log_file:
+            log_file.write("배정 시작...\n")
+
+        uid = uuid.uuid4().hex[:6]
+        input_path = os.path.join(UPLOAD_FOLDER, 'dutyple.xlsx')
+        output_path = os.path.join(RESULT_FOLDER, f'result_{uid}.xlsx')
+
+        if not os.path.exists(input_path):
+            return "입력 템플릿 파일이 없습니다", 400
+
+        # 기본값으로 실행 (임시)
+        run_dutyple(input_path, output_path,
+                    nurse_count=10,
+                    year=2025,
+                    month=5,
+                    weekday_D=2, weekday_E=2, weekday_N=2,
+                    holiday_D=1, holiday_E=1, holiday_N=2,
+                    N_count_nurse=6)
+
+        with open(log_path, "a", encoding="utf-8") as log_file:
+            log_file.write("배정 성공\n")
+
+        with open("success_uid.txt", "w") as f:
+            f.write(uid)
+
+        return jsonify({"status": "success", "uid": uid})
+
+    except Exception as e:
+        with open("log.txt", "a", encoding="utf-8") as log_file:
+            log_file.write(f"배정 실패: {e}\n")
+        return f"배정 실패: {e}", 500
 
 @app.route('/result/<uid>', methods=['GET'])
 def get_result(uid):
