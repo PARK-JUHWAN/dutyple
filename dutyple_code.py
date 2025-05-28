@@ -136,7 +136,10 @@ for col in [-2, -1, 0]:
 for nurse_name in df_origin.index:
     for day in df_origin.columns:
         if isinstance(day, int) and day > 0:
-            raw_val = df_origin.loc[nurse_name, day]
+            try:
+                raw_val = df_origin.at[nurse_name, day]
+            except KeyError:
+                continue
             if pd.notna(raw_val):
                 duty = str(raw_val).strip().upper()
                 if duty in ["D", "E"]:
