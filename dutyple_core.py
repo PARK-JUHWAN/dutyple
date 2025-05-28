@@ -82,11 +82,12 @@ def run_dutyple(input_path, output_path,
     for nurse_name in df_origin.index:
         for day in df_origin.columns:
             if isinstance(day, int) and day > 0:
-                duty = df_origin.loc[nurse_name, day]
-                if pd.notna(duty):
+                raw_val = df_origin.loc[nurse_name, day]
+                if pd.notna(raw_val):
+                    duty = str(raw_val).strip().upper()
                     if duty in ["D", "E"]:
                         prefer(nurse_name, day, "W")
-                    else:
+                    elif duty in ["N", "X"]:
                         prefer(nurse_name, day, duty)
 
     df["D"] = (df == "D").sum(axis=1)
