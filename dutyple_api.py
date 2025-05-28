@@ -65,6 +65,47 @@ def upload_file():
 
     return jsonify({"uuid": uid})
 
+@app.route('/generate', methods=['GET'])
+def generate_schedule():
+    print("[GENERATE] 요청 수신됨")
+    try:
+        # 가장 최근 업로드된 파일 사용
+        files = sorted([f for f in os.listdir(UPLOAD_FOLDER) if f.endswith('.xlsx')])
+        if not files:
+            print("[GENERATE] 업로드된 파일이 없음")
+            return "입력 템플릿 파일이 없습니다", 400
+
+        latest_file = files[-1]
+        uid = latest_file.replace('.xlsx', '')
+        input_path = os.path.join(UPLOAD_FOLDER, latest_file)
+        output_path = os.path.join(RESULT_FOLDER, f"result_{uid}.xlsx")
+
+        print(f"[GENERATE] 입력 파일: {input_path}")
+        print(f"[GENERATE] 출력 파일: {output_path}")
+
+        run_dutyple(input_path, output_path,
+                    nurse_count=10,
+                    year=2025,
+                    month=5,
+                    weekday_D=2, weekday_E=2, weekday_N=2,
+                    holiday_D=1, holiday_E=1, holiday_N=2,
+                    N_count_nurse=6)
+
+        with open("success_uid.txt", "w") as f:
+            f.write(uid)
+
+        with open("log.txt", "w", encoding="utf-8") as log_file:
+            log_file.write("배정 성공\n")
+
+        print("[GENERATE] 배정 성공")
+        return jsonify({"status": "success", "uid": uid})
+
+    except Exception as e:
+        with open("log.txt", "a", encoding="utf-8") as log_file:
+            log_file.write(f"배정 실패: {e}\n")
+        print(f"[GENERATE] 실패: {e}")
+        return f"배정 실패: {str(e)}", 500
+
 @app.route('/result/<uid>', methods=['GET'])
 def get_result(uid):
     path = os.path.join(RESULT_FOLDER, f'result_{uid}.xlsx')
