@@ -1,4 +1,5 @@
 from flask import Flask, request, send_file, jsonify
+from flask_cors import CORS  # ✅ 추가
 import os
 import uuid
 from dutyple_core import run_dutyple
@@ -11,6 +12,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULT_FOLDER, exist_ok=True)
 
 app = Flask(__name__)
+CORS(app)  # ✅ CORS 허용
 
 @app.route('/')
 def index():
@@ -69,7 +71,6 @@ def generate_duty():
         if not os.path.exists(input_path):
             return "입력 템플릿 파일이 없습니다", 400
 
-        # 기본값으로 실행 (임시)
         run_dutyple(input_path, output_path,
                     nurse_count=10,
                     year=2025,
